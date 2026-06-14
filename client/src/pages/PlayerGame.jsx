@@ -63,6 +63,7 @@ function PlayerGame() {
   const [bingoLineClaimed, setBingoLineClaimed] = useState(false)
   const [bingoFullHouseClaimed, setBingoFullHouseClaimed] = useState(false)
   const [bingoScores, setBingoScores] = useState([])
+  const [bingoMarked, setBingoMarked] = useState([])
   const bingoPickTimerRef = useRef(null)
 
   useEffect(() => {
@@ -199,6 +200,7 @@ function PlayerGame() {
       setBingoLineClaimed(false)
       setBingoFullHouseClaimed(false)
       setBingoScores([])
+      setBingoMarked([])
       setGameState('bingo_pick')
 
       if (bingoPickTimerRef.current) clearInterval(bingoPickTimerRef.current)
@@ -401,6 +403,10 @@ function PlayerGame() {
 
   const handleClaimBingo = (type) => {
     socket.emit('player:claim_bingo', { gameId: gameIdRef.current, type })
+  }
+
+  const toggleBingoMark = (n) => {
+    setBingoMarked(marked => marked.includes(n) ? marked.filter(m => m !== n) : [...marked, n])
   }
 
   if (gameState === 'waiting') {
@@ -781,10 +787,11 @@ function PlayerGame() {
           }}
         >
           {bingoNumbers.map(n => {
-            const marked = bingoCalled.includes(n)
+            const marked = bingoMarked.includes(n)
             return (
               <div
                 key={n}
+                onClick={() => toggleBingoMark(n)}
                 style={{
                   aspectRatio: '1',
                   borderRadius: '10px',
@@ -793,6 +800,8 @@ function PlayerGame() {
                   justifyContent: 'center',
                   fontSize: '1.4rem',
                   fontWeight: '700',
+                  cursor: 'pointer',
+                  userSelect: 'none',
                   background: marked ? 'rgba(34, 197, 94, 0.3)' : 'rgba(255,255,255,0.06)',
                   border: marked ? '2px solid #22c55e' : '1px solid rgba(255,255,255,0.15)',
                   color: marked ? '#86efac' : 'white'

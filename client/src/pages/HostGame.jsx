@@ -689,7 +689,9 @@ function HostBingoGame() {
   const [latestNumber, setLatestNumber] = useState(null)
   const [winners, setWinners] = useState([])
   const [scores, setScores] = useState([])
+  const [cheatAlert, setCheatAlert] = useState(null)
   const gameIdRef = useRef(null)
+  const cheatTimeoutRef = useRef(null)
 
   useEffect(() => {
     const gameId = localStorage.getItem('hilly-quiz-host-gameId')
@@ -725,6 +727,12 @@ function HostBingoGame() {
       setWinners(w => [...w, { type, nickname, points }])
     }
 
+    const onCheat = ({ nickname }) => {
+      setCheatAlert(nickname)
+      if (cheatTimeoutRef.current) clearTimeout(cheatTimeoutRef.current)
+      cheatTimeoutRef.current = setTimeout(() => setCheatAlert(null), 4000)
+    }
+
     const onResults = ({ scores: s, calledNumbers: cn }) => {
       setCalledNumbers(cn)
       setScores(s)
@@ -742,6 +750,7 @@ function HostBingoGame() {
     socket.on('game:bingo_calling_start', onCallingStart)
     socket.on('game:bingo_number', onNumber)
     socket.on('game:bingo_win', onWin)
+    socket.on('game:bingo_cheat', onCheat)
     socket.on('game:bingo_results', onResults)
     socket.on('game:end', onEnd)
 
@@ -751,8 +760,10 @@ function HostBingoGame() {
       socket.off('game:bingo_calling_start', onCallingStart)
       socket.off('game:bingo_number', onNumber)
       socket.off('game:bingo_win', onWin)
+      socket.off('game:bingo_cheat', onCheat)
       socket.off('game:bingo_results', onResults)
       socket.off('game:end', onEnd)
+      if (cheatTimeoutRef.current) clearTimeout(cheatTimeoutRef.current)
     }
   }, [navigate])
 
@@ -775,6 +786,29 @@ function HostBingoGame() {
 
   return (
     <div className="page-top">
+      {cheatAlert && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.75)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          textAlign: 'center',
+          padding: '1rem'
+        }}>
+          <div style={{ fontSize: '4rem' }}>🚨</div>
+          <div
+            className="cheat-shake"
+            style={{ fontSize: '3rem', fontWeight: '800', color: '#ef4444', lineHeight: 1.2 }}
+          >
+            {cheatAlert} IS A CHEAT!
+          </div>
+        </div>
+      )}
+
       {phase === 'picking' && (
         <>
           <div className="question-box" style={{ fontSize: '1.6rem' }}>

@@ -539,6 +539,9 @@ io.on('connection', (socket) => {
         if (type === 'fullhouse') {
           showBingoResults(game);
         }
+      } else if (result.reason === 'invalid') {
+        io.to(game.pin).emit('game:bingo_cheat', { type, nickname: player.nickname });
+        console.log(`Bingo false claim (${type}) by ${player.nickname} in game ${gameId}`);
       }
     } catch (err) {
       console.error('player:claim_bingo error:', err);
