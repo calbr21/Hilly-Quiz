@@ -678,7 +678,7 @@ function startBingoCalling(game) {
       return;
     }
     io.to(game.pin).emit('game:bingo_number', { number, calledNumbers: game.calledNumbers });
-  }, 3000);
+  }, 7000);
 }
 
 function showBingoResults(game) {
