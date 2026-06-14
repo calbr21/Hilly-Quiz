@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(timeout 5 node server/index.js)",
+      "Bash(timeout 4 node server/index.js)",
+      "Bash(ipconfig)",
+      "Bash(node -e \"require\\(''./server/routes/admin''\\)\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/admin/questions/bulk -H \"Content-Type: application/json\" -d '{\"\"questions\"\":[{\"\"category_name\"\":\"\"Test Cat\"\",\"\"question_text\"\":\"\"Is this working?\"\",\"\"type\"\":\"\"true_false\"\",\"\"option_a\"\":\"\"True\"\",\"\"option_b\"\":\"\"False\"\",\"\"option_c\"\":\"\"\"\",\"\"option_d\"\":\"\"\"\",\"\"correct_answer\"\":\"\"A\"\"}]}')",
+      "Bash(taskkill /F /IM node.exe)",
+      "Bash(netstat -ano)",
+      "Bash(cmd /c \"taskkill /F /PID 26428\" 2>&1)",
+      "Bash(npm run *)",
+      "Bash(mkdir \"C:\\\\Users\\\\cjbra\\\\Desktop\\\\Hilly Quiz\\\\client\\\\public\" && cp \"C:\\\\Users\\\\cjbra\\\\Downloads\\\\C89BC4C1-B4FC-4D0F-BCBB-CADB21CC295B \\(online-video-cutter.com\\).mp4\" \"C:\\\\Users\\\\cjbra\\\\Desktop\\\\Hilly Quiz\\\\client\\\\public\\\\outro.mp4\")",
+      "Bash(node -e \"const fs=require\\('fs'\\); const path=require\\('path'\\); const p = path.join\\(__dirname, 'node_modules/word-list/words.txt'\\); const data = fs.readFileSync\\(p, 'utf8'\\); const words = data.split\\('\\\\n'\\); console.log\\(words.length\\); console.log\\(JSON.stringify\\(words.slice\\(0,5\\)\\)\\); console.log\\(words.includes\\('cat'\\), words.includes\\('act'\\), words.includes\\('zzz'\\)\\);\")",
+      "Bash(node -c db.js)",
+      "Bash(node -c game/gameManager.js)",
+      "Bash(node -c routes/admin.js)",
+      "Bash(node -c index.js)"
+    ]
+  }
+}

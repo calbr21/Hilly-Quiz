@@ -1,0 +1,101 @@
+﻿category_name,question_text,type,option_a,option_b,option_c,option_d,correct_answer
+Technology,Who is considered the father of the computer?,multiple_choice,Charles Babbage,Alan Turing,Bill Gates,Steve Jobs,A
+Technology,What does CPU stand for?,multiple_choice,Central Processing Unit,Computer Personal Unit,Central Program Utility,Core Processing Unit,A
+Technology,In what decade was the first iPhone released?,multiple_choice,1990s,2000s,2010s,1980s,B
+Technology,The first computer bug was literally a moth found in a relay.,true_false,,,,,True
+Technology,What does WWW stand for?,multiple_choice,World Wide Web,World Wide Wire,Wide World Web,World Web Wide,A
+Technology,Apple invented the graphical user interface (GUI) concept entirely on their own.,true_false,,,,,False
+Technology,What year was Google founded?,multiple_choice,1996,1998,2000,2004,B
+Technology,The first text message was sent in 1992.,true_false,,,,,True
+Technology,Who co-founded Microsoft along with Bill Gates?,multiple_choice,Paul Allen,Steve Jobs,Tim Cook,Larry Page,A
+Technology,The first computer mouse was made primarily of wood.,true_false,,,,,True
+Technology,Which language is often called the mother of modern programming languages?,multiple_choice,C,Assembly,Fortran,COBOL,A
+Technology,Python is named after the snake species.,true_false,,,,,False
+Technology,What does HTML stand for?,multiple_choice,HyperText Markup Language,Home Tool Markup Language,Hyperlinks and Text Markup Language,HyperText Machine Language,A
+Technology,Which symbol is used to start a comment line in Python?,multiple_choice,//,#,--,/*,B
+Technology,JavaScript and Java are essentially the same language.,true_false,,,,,False
+Technology,What does SQL stand for?,multiple_choice,Structured Query Language,Simple Query Language,Standard Query Logic,Sequential Query Language,A
+Technology,Which language is primarily used for styling web pages?,multiple_choice,HTML,CSS,JSON,XML,B
+Technology,C++ is an object-oriented extension of the C language.,true_false,,,,,True
+Technology,What is the standard file extension for a Python script?,multiple_choice,.py,.pt,.pyt,.pn,A
+Technology,Which company originally developed the Java programming language?,multiple_choice,Sun Microsystems,Microsoft,Apple,IBM,A
+Technology,What does URL stand for?,multiple_choice,Uniform Resource Locator,Universal Resource Link,Unique Reference Locator,United Resource Listing,A
+Technology,HTTPS is more secure than HTTP because it encrypts data.,true_false,,,,,True
+Technology,Who is credited with inventing the World Wide Web?,multiple_choice,Tim Berners-Lee,Vint Cerf,Marc Andreessen,Larry Page,A
+Technology,What does ISP stand for?,multiple_choice,Internet Service Provider,Internal System Process,Internet Server Protocol,Information Service Provider,A
+Technology,A cookie is a small piece of data stored by a website on your browser.,true_false,,,,,True
+Technology,Which port does HTTPS typically use by default?,multiple_choice,80,443,21,8080,B
+Technology,Which protocol is commonly used to send emails?,multiple_choice,SMTP,FTP,HTTP,SSH,A
+Technology,A VPN can hide your real IP address from websites you visit.,true_false,,,,,True
+Technology,What does DNS stand for?,multiple_choice,Domain Name System,Digital Network Service,Data Naming Standard,Domain Network Server,A
+Technology,Which web browser was developed by Google?,multiple_choice,Chrome,Safari,Edge,Firefox,A
+Technology,What does RAM stand for?,multiple_choice,Random Access Memory,Read Access Memory,Run Access Memory,Rapid Access Memory,A
+Technology,An SSD is generally faster than a traditional HDD.,true_false,,,,,True
+Technology,What does GPU stand for?,multiple_choice,Graphics Processing Unit,General Processing Unit,Graphic Program Utility,Game Processing Unit,A
+Technology,Which company designs the M-series chips used in modern Macs?,multiple_choice,Apple,Intel,AMD,Nvidia,A
+Technology,USB stands for Universal Serial Bus.,true_false,,,,,True
+Technology,What unit is typically used to measure CPU clock speed?,multiple_choice,Gigahertz,Gigabytes,Watts,Lumens,A
+Technology,Which component is often called the brain of the computer?,multiple_choice,CPU,RAM,PSU,HDD,A
+Technology,Bluetooth typically operates on the 2.4GHz frequency band.,true_false,,,,,True
+Technology,What does PSU stand for in a computer?,multiple_choice,Power Supply Unit,Processing System Unit,Primary Storage Unit,Program Sequence Unit,A
+Technology,Which company is one of the largest CPU manufacturers alongside AMD?,multiple_choice,Intel,Nvidia,Samsung,Sony,A
+Technology,Which company developed the Windows operating system?,multiple_choice,Microsoft,Apple,Google,IBM,A
+Technology,Linux is open-source software.,true_false,,,,,True
+Technology,What does OS stand for?,multiple_choice,Operating System,Output System,Online System,Operational Software,A
+Technology,Which operating system is used on iPhones?,multiple_choice,iOS,Android,Windows Mobile,macOS,A
+Technology,Android is based on the Linux kernel.,true_false,,,,,True
+Technology,What is the name of Apple's desktop operating system?,multiple_choice,macOS,iOS,watchOS,ChromeOS,A
+Technology,Which file format is commonly used for compressed files?,multiple_choice,ZIP,DOC,MP3,PNG,A
+Technology,A firewall helps protect a computer from unauthorized network access.,true_false,,,,,True
+Technology,What is the default file manager on Windows called?,multiple_choice,File Explorer,Finder,Files,Nautilus,A
+Technology,Ubuntu is a distribution of Linux.,true_false,,,,,True
+Technology,Which company makes the PlayStation console?,multiple_choice,Sony,Microsoft,Nintendo,Sega,A
+Technology,Minecraft was originally created by Mojang.,true_false,,,,,True
+Technology,In gaming, FPS commonly refers to which genre?,multiple_choice,First-Person Shooter,Fantasy Puzzle Simulator,Final Player Stage,Fast Paced Strategy,A
+Technology,Which company developed the Xbox console?,multiple_choice,Microsoft,Sony,Nintendo,Apple,A
+Technology,The Legend of Zelda is a Nintendo franchise.,true_false,,,,,True
+Technology,Which of these is widely cited as the best-selling video game of all time?,multiple_choice,Minecraft,Tetris,GTA V,Wii Sports,A
+Technology,Esports stands for electronic sports.,true_false,,,,,True
+Technology,Which company created the Mario franchise?,multiple_choice,Nintendo,Sega,Capcom,Sony,A
+Technology,What type of game is chess considered in digital form?,multiple_choice,Strategy,Shooter,Racing,Platformer,A
+Technology,Steam is a digital game distribution platform owned by Valve.,true_false,,,,,True
+Technology,What does AI stand for?,multiple_choice,Artificial Intelligence,Automated Information,Advanced Interface,Algorithmic Input,A
+Technology,ChatGPT was developed by OpenAI.,true_false,,,,,True
+Technology,What term describes AI that can perform many different tasks like a human?,multiple_choice,Artificial General Intelligence,Narrow AI,Machine Learning,Deep Learning,A
+Technology,Machine learning is a subset of artificial intelligence.,true_false,,,,,True
+Technology,Which company developed the Claude AI assistant?,multiple_choice,Anthropic,OpenAI,Google,Meta,A
+Technology,What is a neural network loosely inspired by?,multiple_choice,The human brain,The internet,Quantum computers,Calculators,A
+Technology,AI image generators can create images from text descriptions.,true_false,,,,,True
+Technology,What does LLM stand for in AI?,multiple_choice,Large Language Model,Long Logic Machine,Linear Learning Method,Limited Language Mode,A
+Technology,Which tech company created the AI assistant Siri?,multiple_choice,Apple,Google,Amazon,Microsoft,A
+Technology,Self-driving cars rely heavily on AI and sensor data.,true_false,,,,,True
+Technology,Who founded Amazon?,multiple_choice,Jeff Bezos,Elon Musk,Mark Zuckerberg,Bill Gates,A
+Technology,Facebook was renamed to Meta in 2021.,true_false,,,,,True
+Technology,Which company owns YouTube?,multiple_choice,Google,Microsoft,Apple,Amazon,A
+Technology,Who is the co-founder and former CEO of Apple known for its iconic products?,multiple_choice,Steve Jobs,Tim Cook,Bill Gates,Jeff Bezos,A
+Technology,Elon Musk was the very first founder of Tesla when it was created.,true_false,,,,,False
+Technology,Which company developed the social media platform Instagram?,multiple_choice,Meta (Facebook),Twitter,Google,Snapchat,A
+Technology,What is the name of Elon Musk's rocket company?,multiple_choice,SpaceX,Blue Origin,Virgin Galactic,NASA,A
+Technology,Netflix originally started as a DVD rental-by-mail service.,true_false,,,,,True
+Technology,Which company created the search engine Bing?,multiple_choice,Microsoft,Google,Yahoo,Apple,A
+Technology,Samsung is a South Korean company.,true_false,,,,,True
+Technology,What does SMS stand for?,multiple_choice,Short Message Service,Simple Mail System,Send Message Service,Smart Messaging Standard,A
+Technology,5G is faster than 4G.,true_false,,,,,True
+Technology,Which company develops the Android operating system?,multiple_choice,Google,Apple,Samsung,Microsoft,A
+Technology,What is the name of Apple's mobile payment service?,multiple_choice,Apple Pay,Apple Cash Pay,iPay,Apple Wallet Pay,A
+Technology,A SIM card stores subscriber information for mobile networks.,true_false,,,,,True
+Technology,What does GPS stand for?,multiple_choice,Global Positioning System,General Phone Service,Geo Positioning Software,Global Phone System,A
+Technology,In what year was the first iPhone released?,multiple_choice,2007,2005,2009,2010,A
+Technology,Wi-Fi calling allows you to make calls over a Wi-Fi network instead of cellular signal.,true_false,,,,,True
+Technology,What is a software update for a phone's operating system commonly called?,multiple_choice,Firmware update,Hardware patch,Network reset,Data wipe,A
+Technology,NFC technology is used for things like contactless payments.,true_false,,,,,True
+Technology,Which platform is known for short-form videos and was developed by ByteDance?,multiple_choice,TikTok,Instagram,Twitter,Snapchat,A
+Technology,Twitter was rebranded as X in 2023.,true_false,,,,,True
+Technology,What was the original character limit for a standard post on Twitter/X?,multiple_choice,280,140,500,1000,A
+Technology,Which platform is primarily used for professional networking?,multiple_choice,LinkedIn,Pinterest,TikTok,Reddit,A
+Technology,Snapchat is known for messages that disappear after being viewed.,true_false,,,,,True
+Technology,Which company owns WhatsApp?,multiple_choice,Meta,Google,Microsoft,Apple,A
+Technology,What is a hashtag primarily used for on social media?,multiple_choice,Categorizing content,Encrypting messages,Deleting posts,Blocking users,A
+Technology,Reddit is organized into communities called subreddits.,true_false,,,,,True
+Technology,Which photo and video sharing platform was founded in 2010?,multiple_choice,Instagram,LinkedIn,Twitter,Discord,A
+Technology,Discord was originally created primarily for gamers to communicate.,true_false,,,,,True

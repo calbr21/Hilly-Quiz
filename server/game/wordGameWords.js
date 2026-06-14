@@ -1,0 +1,28 @@
+// Long base words for Word Splash mode — players make smaller words from these letters
+module.exports = [
+  'COMPUTATION',
+  'INFORMATION',
+  'CELEBRATION',
+  'BASKETBALL',
+  'RESTAURANT',
+  'ADVENTUROUS',
+  'DICTIONARY',
+  'STATIONERY',
+  'UNDERSTAND',
+  'BACKGROUND',
+  'TELEVISION',
+  'EDUCATIONAL',
+  'CHOCOLATE',
+  'ELEPHANTS',
+  'NEWSPAPER',
+  'FOOTBALL',
+  'BUTTERFLY',
+  'PINEAPPLE',
+  'WONDERFUL',
+  'CARNATIONS',
+  'MOUNTAINS',
+  'SANDWICHES',
+  'FIREPLACE',
+  'KEYBOARD',
+  'PAINTBRUSH'
+];
