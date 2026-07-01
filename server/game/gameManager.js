@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const wordGameWords = require('./wordGameWords');
+const wordleWords = require('./wordleWords');
 const db = require('../db');
 
 const games = new Map(); // gameId -> game object
@@ -83,6 +84,167 @@ function createWordGame(pin, hostSocketId, timeLimit) {
   };
   games.set(gameId, game);
   return gameId;
+}
+
+const WORDLE_MAX_GUESSES = 6;
+const WORDLE_WORD_LENGTH = 5;
+
+function createWordleGame(pin, hostSocketId, rounds, timeLimit) {
+  const gameId = pin; // pin == gameId for simplicity
+  const game = {
+    gameId,
+    pin,
+    mode: 'wordle',
+    hostSocketId,
+    players: new Map(), // socketId -> { nickname, nicknameId, score, answered }
+    rounds: rounds || 3,
+    currentRound: 0,
+    usedWords: new Set(),
+    secretWord: null,
+    timeLimit: timeLimit || 180,
+    guesses: new Map(), // socketId -> [{ guess, feedback }]
+    finished: new Set(),
+    roundScores: new Map(), // socketId -> score earned this round
+    resultsShown: false,
+    status: 'lobby'
+  };
+  games.set(gameId, game);
+  return gameId;
+}
+
+function pickWordleWord(gameId) {
+  const game = games.get(gameId);
+  if (!game) return null;
+
+  let available = wordleWords.filter(w => !game.usedWords.has(w));
+  if (available.length === 0) {
+    game.usedWords.clear();
+    available = wordleWords;
+  }
+
+  const word = available[Math.floor(Math.random() * available.length)];
+  game.usedWords.add(word);
+  game.secretWord = word;
+  game.currentRound++;
+  game.guesses.clear();
+  game.finished.clear();
+  game.roundScores.clear();
+  game.resultsShown = false;
+
+  for (const player of game.players.values()) {
+    player.answered = false;
+  }
+
+  return word;
+}
+
+function scoreWordleGuess(secret, guess) {
+  const secretArr = secret.split('');
+  const guessArr = guess.split('');
+  const feedback = new Array(guessArr.length).fill('absent');
+  const remaining = {};
+
+  for (let i = 0; i < secretArr.length; i++) {
+    if (guessArr[i] === secretArr[i]) {
+      feedback[i] = 'correct';
+    } else {
+      remaining[secretArr[i]] = (remaining[secretArr[i]] || 0) + 1;
+    }
+  }
+  for (let i = 0; i < guessArr.length; i++) {
+    if (feedback[i] === 'correct') continue;
+    const ch = guessArr[i];
+    if (remaining[ch] > 0) {
+      feedback[i] = 'present';
+      remaining[ch]--;
+    }
+  }
+  return feedback;
+}
+
+function submitWordleGuess(gameId, socketId, rawGuess) {
+  const game = games.get(gameId);
+  if (!game) return { error: 'no_game' };
+  if (game.finished.has(socketId)) return { error: 'already_finished' };
+
+  const guess = String(rawGuess || '').trim().toLowerCase();
+  if (guess.length !== WORDLE_WORD_LENGTH || !/^[a-z]+$/.test(guess)) {
+    return { error: 'invalid_length' };
+  }
+
+  const dictionary = getDictionary();
+  if (!dictionary.has(guess)) {
+    return { error: 'not_a_word' };
+  }
+
+  if (!game.guesses.has(socketId)) game.guesses.set(socketId, []);
+  const playerGuesses = game.guesses.get(socketId);
+
+  if (playerGuesses.length >= WORDLE_MAX_GUESSES) {
+    return { error: 'no_guesses_left' };
+  }
+
+  const feedback = scoreWordleGuess(game.secretWord, guess);
+  const guessNumber = playerGuesses.length + 1;
+  const solved = guess === game.secretWord;
+  playerGuesses.push({ guess, feedback });
+
+  let finished = false;
+  let score = 0;
+  if (solved) {
+    finished = true;
+    score = Math.max(700 - (guessNumber - 1) * 100, 100);
+  } else if (guessNumber >= WORDLE_MAX_GUESSES) {
+    finished = true;
+    score = 0;
+  }
+
+  if (finished) {
+    game.finished.add(socketId);
+    game.roundScores.set(socketId, score);
+    const player = game.players.get(socketId);
+    if (player) {
+      player.score += score;
+      player.answered = true;
+    }
+  }
+
+  return { feedback, guessNumber, solved, finished, maxGuesses: WORDLE_MAX_GUESSES, score };
+}
+
+function forfeitWordle(gameId, socketId) {
+  const game = games.get(gameId);
+  if (!game) return;
+  if (game.finished.has(socketId)) return;
+
+  game.finished.add(socketId);
+  game.roundScores.set(socketId, 0);
+  const player = game.players.get(socketId);
+  if (player) player.answered = true;
+}
+
+function getWordleResults(gameId) {
+  const game = games.get(gameId);
+  if (!game) return [];
+
+  const results = [];
+  for (const [socketId, player] of game.players.entries()) {
+    const guesses = game.guesses.get(socketId) || [];
+    const roundScore = game.roundScores.get(socketId) || 0;
+    const solved = guesses.length > 0 && guesses[guesses.length - 1].guess === game.secretWord;
+    results.push({
+      socketId,
+      nickname: player.nickname,
+      guesses,
+      guessCount: guesses.length,
+      solved,
+      roundScore,
+      totalScore: player.score
+    });
+  }
+
+  results.sort((a, b) => b.totalScore - a.totalScore);
+  return results;
 }
 
 function shuffle(arr) {
@@ -438,6 +600,11 @@ module.exports = {
   createGame,
   createDrawGame,
   createWordGame,
+  createWordleGame,
+  pickWordleWord,
+  submitWordleGuess,
+  forfeitWordle,
+  getWordleResults,
   createBingoGame,
   submitBingoNumbers,
   callNextBingoNumber,

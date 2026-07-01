@@ -138,6 +138,25 @@ io.on('connection', (socket) => {
     }
   });
 
+  // HOST: Create a new Wordle game
+  socket.on('host:create_wordle', ({ rounds, timeLimit }) => {
+    try {
+      const pin = generatePin();
+      const roundCount = Math.min(Math.max(parseInt(rounds) || 3, 1), 10);
+      const limit = Math.min(Math.max(parseInt(timeLimit) || 180, 60), 300);
+
+      const gameId = gameManager.createWordleGame(pin, socket.id, roundCount, limit);
+      db.createGameSession(pin, null);
+
+      socket.join(pin);
+      socket.emit('host:created', { pin, gameId, mode: 'wordle' });
+      console.log(`Wordle game created: PIN=${pin}, gameId=${gameId}, rounds=${roundCount}, timeLimit=${limit}`);
+    } catch (err) {
+      console.error('host:create_wordle error:', err);
+      socket.emit('error', { message: err.message });
+    }
+  });
+
   // HOST: Create a new Bingo game
   socket.on('host:create_bingo', () => {
     try {
@@ -242,6 +261,20 @@ io.on('connection', (socket) => {
         io.to(game.pin).emit('game:bingo_pick', { pickTime });
         game.bingoPickTimeout = setTimeout(() => startBingoCalling(game), pickTime * 1000);
         console.log(`Bingo game started: ${gameId}, picking phase`);
+        return;
+      }
+
+      if (game.mode === 'wordle') {
+        gameManager.pickWordleWord(gameId);
+        io.to(game.pin).emit('game:wordle_round', {
+          roundNumber: game.currentRound,
+          totalRounds: game.rounds,
+          timeLimit: game.timeLimit,
+          maxGuesses: 6,
+          wordLength: 5
+        });
+        game.wordleTimeout = setTimeout(() => showWordleResults(game), game.timeLimit * 1000);
+        console.log(`Wordle game started: ${gameId}, round 1`);
         return;
       }
 
@@ -561,6 +594,83 @@ io.on('connection', (socket) => {
     }
   });
 
+  // PLAYER: Submit a Wordle guess
+  socket.on('player:submit_guess', ({ gameId, guess }) => {
+    try {
+      const game = gameManager.getGame(gameId);
+      if (!game || game.status !== 'active' || game.mode !== 'wordle') return;
+
+      const player = game.players.get(socket.id);
+      if (!player) return;
+
+      const result = gameManager.submitWordleGuess(gameId, socket.id, guess);
+      socket.emit('player:guess_result', result);
+
+      if (result.error) return;
+
+      const finishedCount = game.finished.size;
+      const totalPlayers = game.players.size;
+
+      io.to(game.hostSocketId).emit('game:wordle_progress', {
+        finishedCount,
+        totalPlayers,
+        players: Array.from(game.players.entries()).map(([sid, p]) => ({
+          nickname: p.nickname,
+          guessCount: (game.guesses.get(sid) || []).length,
+          finished: game.finished.has(sid)
+        }))
+      });
+
+      if (finishedCount > 0 && finishedCount === totalPlayers) {
+        showWordleResults(game);
+      }
+
+      console.log(`Wordle guess: player=${player.nickname}, guess=${guess}, game=${gameId}`);
+    } catch (err) {
+      console.error('player:submit_guess error:', err);
+    }
+  });
+
+  // HOST: Force-show wordle results (e.g. if not everyone finished in time)
+  socket.on('host:show_wordle_results', ({ gameId }) => {
+    try {
+      const game = gameManager.getGame(gameId);
+      if (!game || game.mode !== 'wordle') return;
+      if (game.hostSocketId !== socket.id) return;
+
+      showWordleResults(game);
+    } catch (err) {
+      console.error('host:show_wordle_results error:', err);
+    }
+  });
+
+  // HOST: Move to the next Wordle round (or end the game)
+  socket.on('host:next_wordle_round', ({ gameId }) => {
+    try {
+      const game = gameManager.getGame(gameId);
+      if (!game || game.mode !== 'wordle') return;
+      if (game.hostSocketId !== socket.id) return;
+
+      if (game.currentRound >= game.rounds) {
+        endGameLogic(gameId, socket);
+        return;
+      }
+
+      gameManager.pickWordleWord(gameId);
+      io.to(game.pin).emit('game:wordle_round', {
+        roundNumber: game.currentRound,
+        totalRounds: game.rounds,
+        timeLimit: game.timeLimit,
+        maxGuesses: 6,
+        wordLength: 5
+      });
+      game.wordleTimeout = setTimeout(() => showWordleResults(game), game.timeLimit * 1000);
+      console.log(`Next wordle round for game ${gameId}: round ${game.currentRound}`);
+    } catch (err) {
+      console.error('host:next_wordle_round error:', err);
+    }
+  });
+
   // HOST: Manually end the game
   socket.on('host:end_game', ({ gameId }) => {
     try {
@@ -659,6 +769,28 @@ function showWordResults(game) {
   console.log(`Word results shown for game ${game.gameId}`);
 }
 
+function showWordleResults(game) {
+  if (game.resultsShown) return;
+  game.resultsShown = true;
+
+  if (game.wordleTimeout) { clearTimeout(game.wordleTimeout); game.wordleTimeout = null; }
+
+  // Anyone who hasn't finished forfeits with a zero score for this round
+  for (const socketId of game.players.keys()) {
+    gameManager.forfeitWordle(game.gameId, socketId);
+  }
+
+  const results = gameManager.getWordleResults(game.gameId);
+
+  io.to(game.pin).emit('game:wordle_results', {
+    secretWord: game.secretWord,
+    results,
+    roundNumber: game.currentRound,
+    totalRounds: game.rounds
+  });
+  console.log(`Wordle results shown for game ${game.gameId}, round ${game.currentRound}`);
+}
+
 function startBingoCalling(game) {
   if (game.bingoInterval || game.resultsShown) return;
 
@@ -707,6 +839,7 @@ function endGameLogic(gameId, socket) {
   if (game.bingoInterval) { clearInterval(game.bingoInterval); game.bingoInterval = null; }
   if (game.bingoPickTimeout) { clearTimeout(game.bingoPickTimeout); game.bingoPickTimeout = null; }
   if (game.wordTimeout) { clearTimeout(game.wordTimeout); game.wordTimeout = null; }
+  if (game.wordleTimeout) { clearTimeout(game.wordleTimeout); game.wordleTimeout = null; }
 
   const finalScores = gameManager.calculateScores(gameId);
 

@@ -14,7 +14,219 @@ function HostGame() {
   if (mode === 'draw') return <HostDrawGame />
   if (mode === 'word') return <HostWordGame />
   if (mode === 'bingo') return <HostBingoGame />
+  if (mode === 'wordle') return <HostWordleGame />
   return <HostQuizGame />
+}
+
+const TILE_COLORS = { correct: '#22c55e', present: '#eab308', absent: '#3f3f52' }
+
+function HostWordleGame() {
+  const navigate = useNavigate()
+  const [phase, setPhase] = useState('loading') // loading | playing | results
+  const [roundInfo, setRoundInfo] = useState({ roundNumber: 0, totalRounds: 0 })
+  const [timeLimit, setTimeLimit] = useState(180)
+  const [countdown, setCountdown] = useState(null)
+  const [progress, setProgress] = useState({ finishedCount: 0, totalPlayers: 0, players: [] })
+  const [secretWord, setSecretWord] = useState('')
+  const [results, setResults] = useState([])
+  const gameIdRef = useRef(null)
+  const countdownRef = useRef(null)
+
+  useEffect(() => {
+    const gameId = localStorage.getItem('hilly-quiz-host-gameId')
+    if (!gameId) {
+      navigate('/host')
+      return
+    }
+    gameIdRef.current = gameId
+
+    const onRound = ({ roundNumber, totalRounds, timeLimit: tl }) => {
+      setRoundInfo({ roundNumber, totalRounds })
+      setTimeLimit(tl)
+      setCountdown(tl)
+      setProgress({ finishedCount: 0, totalPlayers: 0, players: [] })
+      setSecretWord('')
+      setResults([])
+      setPhase('playing')
+
+      if (countdownRef.current) clearInterval(countdownRef.current)
+      countdownRef.current = setInterval(() => {
+        setCountdown(c => {
+          if (c <= 1) {
+            clearInterval(countdownRef.current)
+            countdownRef.current = null
+            return 0
+          }
+          return c - 1
+        })
+      }, 1000)
+    }
+
+    const onProgress = (data) => {
+      setProgress(data)
+    }
+
+    const onResults = ({ secretWord: w, results: r }) => {
+      if (countdownRef.current) { clearInterval(countdownRef.current); countdownRef.current = null }
+      setSecretWord(w)
+      setResults(r)
+      setPhase('results')
+    }
+
+    const onEnd = ({ finalScores, leaderboard }) => {
+      if (countdownRef.current) { clearInterval(countdownRef.current); countdownRef.current = null }
+      localStorage.setItem('hilly-quiz-final-scores', JSON.stringify(finalScores))
+      localStorage.setItem('hilly-quiz-leaderboard', JSON.stringify(leaderboard))
+      navigate('/host/results')
+    }
+
+    socket.on('game:wordle_round', onRound)
+    socket.on('game:wordle_progress', onProgress)
+    socket.on('game:wordle_results', onResults)
+    socket.on('game:end', onEnd)
+
+    return () => {
+      socket.off('game:wordle_round', onRound)
+      socket.off('game:wordle_progress', onProgress)
+      socket.off('game:wordle_results', onResults)
+      socket.off('game:end', onEnd)
+      if (countdownRef.current) clearInterval(countdownRef.current)
+    }
+  }, [navigate])
+
+  const handleShowResults = () => {
+    socket.emit('host:show_wordle_results', { gameId: gameIdRef.current })
+  }
+
+  const handleNextRound = () => {
+    socket.emit('host:next_wordle_round', { gameId: gameIdRef.current })
+  }
+
+  const handleEndGame = () => {
+    if (countdownRef.current) { clearInterval(countdownRef.current); countdownRef.current = null }
+    socket.emit('host:end_game', { gameId: gameIdRef.current })
+  }
+
+  if (phase === 'loading') {
+    return (
+      <div className="page">
+        <div className="spinner" />
+        <p className="text-muted text-center">Loading...</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="page-top">
+      <div style={{ width: '100%', maxWidth: '800px', marginBottom: '1rem' }}>
+        <div className="question-meta">
+          <span style={{ fontSize: '1rem', color: 'white', fontWeight: '700' }}>
+            🟩 Wordle — Round {roundInfo.roundNumber} / {roundInfo.totalRounds}
+          </span>
+          {phase === 'playing' && (
+            <span className="answered-counter" style={{ margin: 0 }}>
+              ⏱ {countdown}s
+            </span>
+          )}
+        </div>
+        <div className="progress-bar-container">
+          <div
+            className="progress-bar"
+            style={{ width: `${phase === 'playing' && timeLimit > 0 ? (countdown / timeLimit) * 100 : 0}%` }}
+          />
+        </div>
+      </div>
+
+      {phase === 'playing' && (
+        <>
+          <p className="answered-counter">{progress.finishedCount} / {progress.totalPlayers} finished</p>
+
+          <div style={{ width: '100%', maxWidth: '500px', display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+            {progress.players.map(p => (
+              <div key={p.nickname} className="score-item">
+                <span className="name">{p.nickname}</span>
+                <span className="points">
+                  {p.finished ? '✅ Done' : `${p.guessCount} / 6 guesses`}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ width: '100%', maxWidth: '700px', marginTop: '1.5rem' }}>
+            <div className="btn-group">
+              {progress.finishedCount > 0 && progress.finishedCount === progress.totalPlayers ? (
+                <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#22c55e', padding: '0.75rem 1.5rem' }}>
+                  ✅ Everyone's done — revealing...
+                </div>
+              ) : (
+                <button className="btn btn-primary" onClick={handleShowResults} style={{ fontSize: '1.1rem' }}>
+                  📊 Show Results Now
+                </button>
+              )}
+              <button className="btn btn-danger btn-sm" onClick={handleEndGame} style={{ width: 'auto', padding: '0.75rem 1.5rem' }}>
+                End Game
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {phase === 'results' && (
+        <>
+          <div className="question-box" style={{ fontSize: '1.6rem' }}>
+            🏆 The word was: <strong style={{ letterSpacing: '0.2rem' }}>{secretWord.toUpperCase()}</strong>
+          </div>
+
+          <div style={{ width: '100%', maxWidth: '700px', display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
+            {results.map(r => (
+              <div key={r.socketId} className="card" style={{ padding: '1rem' }}>
+                <div className="score-item" style={{ marginBottom: '0.5rem' }}>
+                  <span className="name">{r.nickname}</span>
+                  <span className="points">
+                    {r.solved ? `Solved in ${r.guessCount}` : 'Not solved'} (+{r.roundScore}) · {r.totalScore} pts
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
+                  {r.guesses.map((g, gi) => (
+                    <div key={gi} style={{ display: 'flex', gap: '2px' }}>
+                      {g.feedback.map((f, fi) => (
+                        <div key={fi} style={{
+                          width: '22px',
+                          height: '22px',
+                          borderRadius: '4px',
+                          background: TILE_COLORS[f],
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '0.65rem',
+                          fontWeight: '700',
+                          color: 'white',
+                          textTransform: 'uppercase'
+                        }}>
+                          {g.guess[fi]}
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ width: '100%', maxWidth: '700px', marginTop: '1rem' }}>
+            <div className="btn-group">
+              <button className="btn btn-primary" onClick={handleNextRound} style={{ fontSize: '1rem' }}>
+                {roundInfo.roundNumber >= roundInfo.totalRounds ? '🏁 Finish Game' : '➡ Next Round'}
+              </button>
+              <button className="btn btn-danger btn-sm" onClick={handleEndGame} style={{ width: 'auto', padding: '0.75rem 1.5rem' }}>
+                End Game
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  )
 }
 
 function HostQuizGame() {

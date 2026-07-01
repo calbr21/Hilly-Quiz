@@ -19,6 +19,15 @@ const WORD_TIME_OPTIONS = [
   { label: '3 minutes', value: 180 }
 ]
 
+const WORDLE_ROUND_OPTIONS = [1, 3, 5, 7]
+
+const WORDLE_TIME_OPTIONS = [
+  { label: '1 minute', value: 60 },
+  { label: '2 minutes', value: 120 },
+  { label: '3 minutes', value: 180 },
+  { label: '5 minutes', value: 300 }
+]
+
 function HostLobby() {
   const navigate = useNavigate()
   const [gameMode, setGameMode] = useState('quiz')
@@ -29,6 +38,8 @@ function HostLobby() {
   const [topic, setTopic] = useState('')
   const [rounds, setRounds] = useState(5)
   const [wordTimeLimit, setWordTimeLimit] = useState(120)
+  const [wordleRounds, setWordleRounds] = useState(3)
+  const [wordleTimeLimit, setWordleTimeLimit] = useState(180)
   const [gameCreated, setGameCreated] = useState(false)
   const [pin, setPin] = useState('')
   const [gameId, setGameId] = useState('')
@@ -121,6 +132,12 @@ function HostLobby() {
       return
     }
 
+    if (gameMode === 'wordle') {
+      setCreating(true)
+      socket.emit('host:create_wordle', { rounds: wordleRounds, timeLimit: wordleTimeLimit })
+      return
+    }
+
     if (!categoryId) {
       setError('Please select a category.')
       return
@@ -176,6 +193,13 @@ function HostLobby() {
                 onClick={() => setGameMode('bingo')}
               >
                 🎱 Bingo
+              </button>
+              <button
+                type="button"
+                className={gameMode === 'wordle' ? 'btn btn-primary' : 'btn btn-secondary'}
+                onClick={() => setGameMode('wordle')}
+              >
+                🟩 Wordle
               </button>
             </div>
           </div>
@@ -249,6 +273,38 @@ function HostLobby() {
                 ))}
               </select>
             </div>
+          ) : gameMode === 'wordle' ? (
+            <>
+              <div className="form-group">
+                <label htmlFor="wordleRounds">Number of Rounds</label>
+                <select
+                  id="wordleRounds"
+                  value={wordleRounds}
+                  onChange={e => setWordleRounds(parseInt(e.target.value))}
+                >
+                  {WORDLE_ROUND_OPTIONS.map(r => (
+                    <option key={r} value={r}>{r} Round{r !== 1 ? 's' : ''}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="wordleTimeLimit">Time Limit per Round</label>
+                <select
+                  id="wordleTimeLimit"
+                  value={wordleTimeLimit}
+                  onChange={e => setWordleTimeLimit(parseInt(e.target.value))}
+                >
+                  {WORDLE_TIME_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <p className="text-muted" style={{ fontSize: '0.85rem' }}>
+                Everyone races to guess the same secret 5-letter word in 6 tries — just like Wordle!
+              </p>
+            </>
           ) : (
             <p className="text-muted">
               Each player picks 9 numbers (1-90). Numbers are called every few seconds — shout "Line!" or "House!" when you've got it.

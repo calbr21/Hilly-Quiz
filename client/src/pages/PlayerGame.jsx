@@ -66,6 +66,20 @@ function PlayerGame() {
   const [bingoMarked, setBingoMarked] = useState([])
   const bingoPickTimerRef = useRef(null)
 
+  // Wordle mode state
+  const [wordleRoundInfo, setWordleRoundInfo] = useState({ roundNumber: 0, totalRounds: 0, timeLimit: 180, maxGuesses: 6, wordLength: 5 })
+  const [wordleTimeLeft, setWordleTimeLeft] = useState(180)
+  const [wordleGuesses, setWordleGuesses] = useState([]) // [{ guess, feedback }]
+  const [wordleCurrent, setWordleCurrent] = useState('')
+  const [wordleFinished, setWordleFinished] = useState(false)
+  const [wordleSolved, setWordleSolved] = useState(false)
+  const [wordleError, setWordleError] = useState('')
+  const [wordleSecretWord, setWordleSecretWord] = useState('')
+  const [wordleResults, setWordleResults] = useState([])
+  const wordleTimerRef = useRef(null)
+  const wordleErrorTimerRef = useRef(null)
+  const wordlePendingGuessRef = useRef('')
+
   useEffect(() => {
     const gameId = localStorage.getItem('hilly-quiz-gameId')
     const nickname = localStorage.getItem('hilly-quiz-nickname')
@@ -253,6 +267,61 @@ function PlayerGame() {
       setGameState('bingo_reveal')
     }
 
+    // Wordle mode
+    const onWordleRound = (info) => {
+      setWordleRoundInfo(info)
+      setWordleTimeLeft(info.timeLimit)
+      setWordleGuesses([])
+      setWordleCurrent('')
+      setWordleFinished(false)
+      setWordleSolved(false)
+      setWordleError('')
+      setWordleSecretWord('')
+      setWordleResults([])
+      setGameState('wordle_play')
+
+      if (wordleTimerRef.current) clearInterval(wordleTimerRef.current)
+      wordleTimerRef.current = setInterval(() => {
+        setWordleTimeLeft(t => {
+          if (t <= 1) {
+            clearInterval(wordleTimerRef.current)
+            wordleTimerRef.current = null
+            return 0
+          }
+          return t - 1
+        })
+      }, 1000)
+    }
+
+    const onGuessResult = (result) => {
+      if (result.error) {
+        setWordleError(
+          result.error === 'not_a_word' ? "That's not a word!" :
+          result.error === 'invalid_length' ? 'Guess must be 5 letters.' :
+          ''
+        )
+        if (wordleErrorTimerRef.current) clearTimeout(wordleErrorTimerRef.current)
+        wordleErrorTimerRef.current = setTimeout(() => setWordleError(''), 2000)
+        return
+      }
+      setWordleGuesses(g => [...g, { guess: wordlePendingGuessRef.current, feedback: result.feedback }])
+      setWordleCurrent('')
+      if (result.finished) {
+        setWordleFinished(true)
+        setWordleSolved(result.solved)
+        if (wordleTimerRef.current) { clearInterval(wordleTimerRef.current); wordleTimerRef.current = null }
+      }
+    }
+
+    const onWordleResults = ({ secretWord, results }) => {
+      if (wordleTimerRef.current) { clearInterval(wordleTimerRef.current); wordleTimerRef.current = null }
+      setWordleSecretWord(secretWord)
+      setWordleResults(results)
+      const me = results.find(p => p.nickname === nicknameRef.current)
+      if (me) setMyScore(me.totalScore)
+      setGameState('wordle_reveal')
+    }
+
     socket.on('game:question', onQuestion)
     socket.on('game:reveal', onReveal)
     socket.on('game:end', onEnd)
@@ -269,6 +338,9 @@ function PlayerGame() {
     socket.on('game:bingo_win', onBingoWin)
     socket.on('player:bingo_claim_result', onBingoClaimResult)
     socket.on('game:bingo_results', onBingoResults)
+    socket.on('game:wordle_round', onWordleRound)
+    socket.on('player:guess_result', onGuessResult)
+    socket.on('game:wordle_results', onWordleResults)
 
     return () => {
       socket.off('game:question', onQuestion)
@@ -287,9 +359,14 @@ function PlayerGame() {
       socket.off('game:bingo_win', onBingoWin)
       socket.off('player:bingo_claim_result', onBingoClaimResult)
       socket.off('game:bingo_results', onBingoResults)
+      socket.off('game:wordle_round', onWordleRound)
+      socket.off('player:guess_result', onGuessResult)
+      socket.off('game:wordle_results', onWordleResults)
       if (drawTimerRef.current) clearInterval(drawTimerRef.current)
       if (wordTimerRef.current) clearInterval(wordTimerRef.current)
       if (bingoPickTimerRef.current) clearInterval(bingoPickTimerRef.current)
+      if (wordleTimerRef.current) clearInterval(wordleTimerRef.current)
+      if (wordleErrorTimerRef.current) clearTimeout(wordleErrorTimerRef.current)
     }
   }, [navigate])
 
@@ -408,6 +485,65 @@ function PlayerGame() {
   const toggleBingoMark = (n) => {
     setBingoMarked(marked => marked.includes(n) ? marked.filter(m => m !== n) : [...marked, n])
   }
+
+  const handleWordleKey = (key) => {
+    if (wordleFinished) return
+    if (key === 'ENTER') {
+      if (wordleCurrent.length !== wordleRoundInfo.wordLength) {
+        setWordleError(`Guess must be ${wordleRoundInfo.wordLength} letters.`)
+        if (wordleErrorTimerRef.current) clearTimeout(wordleErrorTimerRef.current)
+        wordleErrorTimerRef.current = setTimeout(() => setWordleError(''), 2000)
+        return
+      }
+      wordlePendingGuessRef.current = wordleCurrent
+      socket.emit('player:submit_guess', { gameId: gameIdRef.current, guess: wordleCurrent })
+      return
+    }
+    if (key === 'BACKSPACE') {
+      setWordleCurrent(c => c.slice(0, -1))
+      return
+    }
+    if (/^[a-zA-Z]$/.test(key)) {
+      setWordleCurrent(c => (c.length < wordleRoundInfo.wordLength ? c + key.toLowerCase() : c))
+    }
+  }
+
+  // Physical keyboard support while guessing
+  useEffect(() => {
+    if (gameState !== 'wordle_play' || wordleFinished) return
+    const onKeyDown = (e) => {
+      if (e.key === 'Enter') handleWordleKey('ENTER')
+      else if (e.key === 'Backspace') handleWordleKey('BACKSPACE')
+      else if (/^[a-zA-Z]$/.test(e.key)) handleWordleKey(e.key)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [gameState, wordleFinished, wordleCurrent, wordleRoundInfo.wordLength])
+
+  // Auto-forfeit when the wordle timer runs out without finishing
+  useEffect(() => {
+    if (gameState === 'wordle_play' && wordleTimeLeft === 0 && !wordleFinished) {
+      setWordleFinished(true)
+    }
+  }, [wordleTimeLeft, gameState, wordleFinished])
+
+  const wordleLetterStates = {}
+  for (const { guess, feedback } of wordleGuesses) {
+    for (let i = 0; i < guess.length; i++) {
+      const ch = guess[i]
+      const f = feedback[i]
+      const rank = { absent: 0, present: 1, correct: 2 }
+      if (!wordleLetterStates[ch] || rank[f] > rank[wordleLetterStates[ch]]) {
+        wordleLetterStates[ch] = f
+      }
+    }
+  }
+
+  const WORDLE_KEY_ROWS = [
+    ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
+    ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
+    ['ENTER', 'z', 'x', 'c', 'v', 'b', 'n', 'm', 'BACKSPACE']
+  ]
 
   if (gameState === 'waiting') {
     return (
@@ -869,6 +1005,108 @@ function PlayerGame() {
               <span className="rank">{i + 1}.</span>
               <span className="name">{player.nickname}</span>
               <span className="points">{player.score} pts</span>
+            </li>
+          ))}
+        </ul>
+
+        <p className="waiting-msg">Waiting for host to continue...</p>
+      </div>
+    )
+  }
+
+  if (gameState === 'wordle_play') {
+    const maxGuesses = wordleRoundInfo.maxGuesses
+    const wordLength = wordleRoundInfo.wordLength
+    const rowsToShow = [...wordleGuesses]
+    if (!wordleFinished && rowsToShow.length < maxGuesses) rowsToShow.push({ guess: wordleCurrent, feedback: null })
+    while (rowsToShow.length < maxGuesses) rowsToShow.push({ guess: '', feedback: null })
+
+    return (
+      <div className="page" style={{ gap: '0' }}>
+        <div className="question-meta" style={{ maxWidth: '500px' }}>
+          <span>🟩 Round {wordleRoundInfo.roundNumber} of {wordleRoundInfo.totalRounds}</span>
+          <span>⏱ {wordleTimeLeft}s</span>
+        </div>
+
+        <div className="wordle-grid">
+          {rowsToShow.map((row, ri) => (
+            <div className="wordle-row" key={ri}>
+              {Array.from({ length: wordLength }).map((_, ci) => {
+                const letter = row.guess[ci] || ''
+                const f = row.feedback ? row.feedback[ci] : null
+                return (
+                  <div key={ci} className={`wordle-tile ${f || (letter ? 'filled' : '')}`}>
+                    {letter}
+                  </div>
+                )
+              })}
+            </div>
+          ))}
+        </div>
+
+        {wordleError && (
+          <p className="text-center" style={{ color: '#ef4444', fontWeight: '700', margin: '0.5rem 0' }}>
+            {wordleError}
+          </p>
+        )}
+
+        {wordleFinished ? (
+          <p className="waiting-msg mt-3">
+            {wordleSolved ? '✅ Solved!' : '❌ Out of guesses!'} Waiting for others...
+          </p>
+        ) : (
+          <div className="wordle-keyboard">
+            {WORDLE_KEY_ROWS.map((row, ri) => (
+              <div className="wordle-keyboard-row" key={ri}>
+                {row.map(key => (
+                  <button
+                    key={key}
+                    className={`wordle-key ${key.length > 1 ? 'wide' : (wordleLetterStates[key] || '')}`}
+                    onClick={() => handleWordleKey(key)}
+                  >
+                    {key === 'BACKSPACE' ? '⌫' : key === 'ENTER' ? 'Enter' : key}
+                  </button>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  if (gameState === 'wordle_reveal') {
+    const me = wordleResults.find(p => p.nickname === nicknameRef.current)
+
+    return (
+      <div className="page">
+        <div className="question-box" style={{ maxWidth: '600px' }}>
+          🏆 The word was: <strong style={{ letterSpacing: '0.2rem' }}>{wordleSecretWord.toUpperCase()}</strong>
+        </div>
+
+        {me && (
+          <div className="card mt-3" style={{ maxWidth: '480px', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
+              {me.solved ? `Solved in ${me.guessCount}` : 'Not solved'}
+            </div>
+            <div style={{ fontSize: '2rem', fontWeight: '800', color: '#fbbf24' }}>{myScore} pts</div>
+          </div>
+        )}
+
+        <ul className="scores-list mt-3" style={{ maxWidth: '500px', margin: '1rem auto 0' }}>
+          {wordleResults.map((player, i) => (
+            <li
+              key={player.nickname}
+              className="score-item"
+              style={{
+                background: player.nickname === nicknameRef.current
+                  ? 'rgba(233, 69, 96, 0.25)'
+                  : undefined
+              }}
+            >
+              <span className="rank">{i + 1}.</span>
+              <span className="name">{player.nickname}</span>
+              <span className="points">{player.totalScore} pts</span>
             </li>
           ))}
         </ul>
